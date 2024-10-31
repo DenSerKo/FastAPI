@@ -5,7 +5,6 @@ import aiohttp
 app = FastAPI()
 task_queue = asyncio.Queue()
 num_consumers = 3
-results = {}
 
 
 async def fetch(queue, session, url):
@@ -34,10 +33,11 @@ async def consumer(queue: asyncio.Queue, results):
 
 @app.get('/')
 async def root():
+    results = {}
     queue = asyncio.Queue()
     urls = [f'https://jsonplaceholder.typicode.com/posts/{i}' for i in range(3)]
     producer = asyncio.create_task(fetcher(queue, urls))
-    consumers = [asyncio.create_task(consumer(queue)) for _ in range(num_consumers)]
+    consumers = [asyncio.create_task(consumer(queue, results)) for _ in range(num_consumers)]
     await producer
     await queue.join()
     await asyncio.gather(*consumers)
