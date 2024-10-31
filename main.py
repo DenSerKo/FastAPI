@@ -4,44 +4,41 @@ import aiohttp
 
 app = FastAPI()
 task_queue = asyncio.Queue()
-num_consumers = 3  # Количество потребителей
+num_consumers = 3
+results = {}
 
-# Продюсер добавляет задачи в очередь каждые несколько секунд
-async def producer():
-    while True:
-        # Пример задачи — запрос к JSONPlaceholder для получения данных о постах
-        url = "https://jsonplaceholder.typicode.com/posts/1"
-        await task_queue.put(url)
-        print(f"Produced task for URL: {url}")
-        await asyncio.sleep(5)  # Интервал между задачами
 
-# Потребители получают URL и делают HTTP запросы
-async def consumer(queue: asyncio.Queue, consumer_id: int):
+async def fetch(queue, session, url):
+    async with session.get(url) as response:
+        content = await response.text()
+        await queue.put(content)
+
+
+async def fetcher(queue, urls):
     async with aiohttp.ClientSession() as session:
-        while True:
-            url = await queue.get()
-            if url is None:
-                print(f"Consumer {consumer_id} shutting down.")
-                queue.task_done()
-                break
-            print(f"Consumer {consumer_id} processing URL: {url}")
-            async with session.get(url) as response:
-                data = await response.json()
-                print(f"Consumer {consumer_id} received data: {data}")
-            queue.task_done()
-
-@app.on_event("startup")
-async def startup_event():
-    # Запускаем продюсера
-    asyncio.create_task(producer())
-    # Запускаем несколько потребителей
-    for i in range(num_consumers):
-        asyncio.create_task(consumer(task_queue, i + 1))
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    await task_queue.join()  # Ждем, пока все задачи в очереди будут выполнены
-    # Отправляем сигнал завершения для каждого потребителя
+        tasks = [asyncio.create_task(fetch(queue, session, url)) for url in urls]
+        await asyncio.gather(*tasks)
     for _ in range(num_consumers):
-        await task_queue.put(None)
-    print("All tasks have been processed, consumers shutting down.")
+        await queue.put(None)
+
+
+async def consumer(queue: asyncio.Queue, results):
+    while True:
+        data = queue.get()
+        if data is None:
+            queue.task_done()
+            break
+        url, content = data
+        results[url] = content
+
+
+@app.get('/')
+async def root():
+    queue = asyncio.Queue()
+    urls = [f'https://jsonplaceholder.typicode.com/posts/{i}' for i in range(3)]
+    producer = asyncio.create_task(fetcher(queue, urls))
+    consumers = [asyncio.create_task(consumer(queue)) for _ in range(num_consumers)]
+    await producer
+    await queue.join()
+    await asyncio.gather(*consumers)
+    return results
