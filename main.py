@@ -10,7 +10,7 @@ num_consumers = 3
 async def fetch(queue, session, url):
     async with session.get(url) as response:
         content = await response.text()
-        await queue.put(content)
+        await queue.put((url, content))
 
 
 async def fetcher(queue, urls):
@@ -33,12 +33,13 @@ async def consumer(queue: asyncio.Queue, results):
 
 @app.get('/')
 async def root():
-    results1 = {}
-    queue = asyncio.Queue()
-    urls = [f'https://jsonplaceholder.typicode.com/posts/{i}' for i in range(3)]
-    producer = asyncio.create_task(fetcher(queue, urls))
-    consumers = [asyncio.create_task(consumer(queue, results1)) for _ in range(num_consumers)]
-    await producer
-    await queue.join()
-    await asyncio.gather(*consumers)
-    return results1
+    # results1 = {}
+    # queue = asyncio.Queue()
+    # urls = [f'https://jsonplaceholder.typicode.com/posts/{i}' for i in range(3)]
+    # producer = asyncio.create_task(fetcher(queue, urls))
+    # consumers = [asyncio.create_task(consumer(queue, results1)) for _ in range(num_consumers)]
+    # await producer
+    # await queue.join()
+    # await asyncio.gather(*consumers)
+    # return results1
+    return {'message': 'Hello from fast api!'}
