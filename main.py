@@ -45,6 +45,6 @@ async def root():
     return {'message': 'Hello from fast api!'}
 
 
-@app.get('hello/{name}')
+@app.get('/hello/{name}')
 async def hello(name: str):
     return {'message': f'I love you, {name}'}
