@@ -48,3 +48,11 @@ async def root():
 @app.get('/hello/{name}')
 async def hello(name: str):
     return {'message': f'I love you, {name}'}
+
+
+@app.get('/posts/{year}')
+async def posts(year: str):
+    posts = {}
+    for i in range(10):
+        posts[f'post{i}'] = {f'Post {i} in year {year}'}
+    return posts
