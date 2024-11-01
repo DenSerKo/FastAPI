@@ -43,3 +43,8 @@ async def root():
     # await asyncio.gather(*consumers)
     # return results1
     return {'message': 'Hello from fast api!'}
+
+
+@app.get('hello/{name}')
+def hello(name: str):
+    return {'message': f'I love you, {name}'}
