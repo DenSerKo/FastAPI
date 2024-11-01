@@ -46,5 +46,5 @@ async def root():
 
 
 @app.get('hello/{name}')
-def hello(name: str):
+async def hello(name: str):
     return {'message': f'I love you, {name}'}
