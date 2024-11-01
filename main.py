@@ -54,5 +54,5 @@ async def hello(name: str):
 async def posts(year: str):
     posts = {}
     for i in range(10):
-        posts[f'post{i}'] = {f'Post {i} in year {year}'}
+        posts[f'post{i}'] = f'Post {i} in year {year}'
     return posts
